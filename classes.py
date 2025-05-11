@@ -11,7 +11,8 @@ class Book:
     publish_date: str = ""
     url: str = ""
     scanned_input: str = ""
-    tags: str = ""  # New field for tags
+    tags: str = ""
+    description: str = ""  # ✅ New field for Google Books description
 
     @classmethod
     def from_open_library(cls, isbn: str, data: dict):
@@ -33,7 +34,8 @@ class Book:
             publish_date=book_data.get("publish_date", ""),
             url=book_data.get("url", ""),
             scanned_input=isbn,
-            tags=tags  # Set the tags to the formatted string
+            tags=tags,
+            description=""  # Open Library does not provide description
         )
 
     @classmethod
@@ -67,15 +69,22 @@ class Book:
             publish_date=volume_info.get("publishedDate", ""),
             url=volume_info.get("canonicalVolumeLink", volume_info.get("infoLink", "")),
             scanned_input=isbn,
-            tags=tags
+            tags=tags,
+            description=volume_info.get("description", "")  # ✅ Google Books description
         )
 
     def to_csv_row(self):
-        return [self.isbn13, self.isbn10, self.title, self.subtitle, self.author, self.publish_date, self.url, self.scanned_input, self.tags]
+        return [
+            self.isbn13, self.isbn10, self.title, self.subtitle, self.author,
+            self.publish_date, self.url, self.scanned_input, self.tags, self.description
+        ]
 
     @staticmethod
     def csv_headers():
-        return ["ISBN-13", "ISBN-10", "Title", "Subtitle", "Author", "Publish Date", "URL", "Scanned Input", "Tags"]
+        return [
+            "ISBN-13", "ISBN-10", "Title", "Subtitle", "Author",
+            "Publish Date", "URL", "Scanned Input", "Tags", "Description"
+        ]
 
     def sortable_date(self):
         try:
@@ -104,6 +113,7 @@ class Book:
             f"Author: {self.author}",
             f"Published: {self.publish_date}",
             f"URL: {self.url}" if self.url else None,
-            f"tags: {self.tags}"
+            f"Tags: {self.tags}",
+            f"Description: {self.description}" if self.description else None
         ]
         return "\n".join(filter(None, lines))
