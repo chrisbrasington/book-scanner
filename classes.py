@@ -124,7 +124,7 @@ class Book:
             f"Published: {self.publish_date}",
             f"URL: {self.url}" if self.url else None,
             f"Tags: {self.tags}",
-            f"Thumbnail: {self.thumbnail}" if self.thumbnail else None,
-            f"Description: {self.description}" if self.description else None
+            f"Thumbnail: {self.thumbnail}" if self.thumbnail else None
+            #,f"Description: {self.description}" if self.description else None
         ]
         return "\n".join(filter(None, lines))
