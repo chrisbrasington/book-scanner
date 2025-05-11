@@ -1,100 +1,12 @@
 import os
 import csv
-import requests
-from dataclasses import dataclass
-from datetime import datetime
+from classes import Book
+from openlibrary import fetch_open_library_data
+from googlebooks import fetch_google_books_data
 
 BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
 
-@dataclass
-class Book:
-    isbn13: str
-    isbn10: str
-    title: str
-    subtitle: str = ""
-    author: str = ""
-    publish_date: str = ""
-    url: str = ""
-    scanned_input: str = ""
-
-    @classmethod
-    def from_open_library(cls, isbn: str, data: dict):
-        key = f"ISBN:{isbn}"
-        book_data = data.get(key, {})
-        identifiers = book_data.get("identifiers", {})
-        return cls(
-            isbn13=identifiers.get("isbn_13", [""])[0],
-            isbn10=identifiers.get("isbn_10", [""])[0],
-            title=book_data.get("title", ""),
-            subtitle=book_data.get("subtitle", ""),
-            author=", ".join(a["name"] for a in book_data.get("authors", [])),
-            publish_date=book_data.get("publish_date", ""),
-            url=book_data.get("url", ""),
-            scanned_input=isbn
-        )
-
-    @classmethod
-    def from_google_books(cls, isbn: str, data: dict):
-        volume_info = data.get("volumeInfo", {})
-        identifiers = volume_info.get("industryIdentifiers", [])
-        isbn13 = next((id['identifier'] for id in identifiers if id['type'] == 'ISBN_13'), "")
-        isbn10 = next((id['identifier'] for id in identifiers if id['type'] == 'ISBN_10'), "")
-        return cls(
-            isbn13=isbn13,
-            isbn10=isbn10,
-            title=volume_info.get("title", ""),
-            subtitle=volume_info.get("subtitle", ""),
-            author=", ".join(volume_info.get("authors", [])),
-            publish_date=volume_info.get("publishedDate", ""),
-            url=volume_info.get("infoLink", ""),
-            scanned_input=isbn
-        )
-
-    def to_csv_row(self):
-        return [self.isbn13, self.isbn10, self.title, self.subtitle, self.author, self.publish_date, self.url, self.scanned_input]
-
-    @staticmethod
-    def csv_headers():
-        return ["ISBN-13", "ISBN-10", "Title", "Subtitle", "Author", "Publish Date", "URL", "Scanned Input"]
-
-    def sortable_date(self):
-        try:
-            # Try to parse the date in the format: "Jul 13, 2021" or "June 15, 2000"
-            return datetime.strptime(self.publish_date, "%b %d, %Y")
-        except ValueError:
-            try:
-                # Try to parse the date in the format: "2025-02-25" (ISO format)
-                return datetime.strptime(self.publish_date, "%Y-%m-%d")
-            except ValueError:
-                try:
-                    # Try to parse the date in the format: "2024" (Year only)
-                    year = int(self.publish_date)
-                    # Return January 1st of that year
-                    return datetime(year, 1, 1)
-                except ValueError:
-                    # If the date is invalid or empty, attempt to guess a plausible date
-                    # Default to January 1st, either in the 1900s or 2000s based on the first digits of the year
-                    # Example: If 'publish_date' is empty or not parsable, we assume 1900 or 2000
-                    try:
-                        year = int(self.publish_date[:4])  # Get the first 4 digits of the year
-                        if year < 1900:
-                            year = 1900  # Adjust to the 1900s if it looks invalid (e.g., "0000")
-                        elif year < 2000:
-                            year = 2000  # Default to 2000 if it's an older format
-                        return datetime(year, 1, 1)  # Default to January 1st of the chosen year
-                    except ValueError:
-                        return datetime(1900, 1, 1)  # Fallback to January 1st, 1900 if all fails
-
-    def __str__(self):
-        lines = [
-            f"Title: {self.title}",
-            f"Subtitle: {self.subtitle}" if self.subtitle else None,
-            f"Author: {self.author}",
-            f"Published: {self.publish_date}",
-            f"URL: {self.url}\n" if self.url else None
-        ]
-        return "\n".join(filter(None, lines))
 
 def load_books() -> dict:
     books = {}
@@ -115,59 +27,38 @@ def load_books() -> dict:
     except FileNotFoundError:
         pass
 
-    # After loading books, resave them to ensure they're sorted
     save_books(books)
-    
     return books
+
 
 def save_books(books: dict):
     sorted_books = sorted(
         books.values(),
-        key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())  # Sort by last name, then by publish date
+        key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())
     )
-
-    # for b in sorted_books:
-    #     print(b.author, b.sortable_date())
-    # x = input()
-
     with open(BOOKS_CSV, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(Book.csv_headers())
         for book in sorted_books:
             writer.writerow(book.to_csv_row())
 
+
 def get_last_name(author: str) -> str:
-    """
-    Helper function to extract the last name from the author's full name.
-    Assumes the last word in the author's name is the last name.
-    """
     parts = author.split()
     return parts[-1] if parts else ""
 
-def fetch_book_data_from_open_library(isbn: str) -> dict:
-    url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return {}
-
-def fetch_book_data_from_google_books(isbn: str) -> dict:
-    url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        items = response.json().get("items", [])
-        if items:
-            return items[0]  # Return first match
-    return {}
 
 def is_valid_isbn13(s):
     return len(s) == 13 and s.isdigit()
 
+
 def is_valid_isbn10(s):
     return len(s) == 10 and s[:-1].isdigit() and (s[-1].isdigit() or s[-1] in 'Xx')
 
+
 def search_books_by_title_and_author(books: dict, title: str, author: str) -> list:
     return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
+
 
 def play_sound(sound_type: str):
     if SOUND_ON:
@@ -175,6 +66,7 @@ def play_sound(sound_type: str):
             os.system("mpv sounds/success.ogg > /dev/null 2>&1")
         elif sound_type == "error":
             os.system("mpv sounds/error.wav > /dev/null 2>&1")
+
 
 def main():
     books = load_books()
@@ -189,7 +81,7 @@ def main():
         if user_input.lower() == 'q':
             break
 
-        user_input = user_input.replace('-','')
+        user_input = user_input.replace('-', '')
 
         if is_valid_isbn13(user_input) or is_valid_isbn10(user_input):
             isbn = user_input
@@ -199,12 +91,12 @@ def main():
                 play_sound("success")
                 continue
 
-            data = fetch_book_data_from_open_library(isbn)
+            data = fetch_open_library_data(isbn)
             if data and f"ISBN:{isbn}" in data:
                 book = Book.from_open_library(isbn, data)
             else:
                 print("Not found on Open Library. Trying Google Books...")
-                data = fetch_book_data_from_google_books(isbn)
+                data = fetch_google_books_data(f"isbn:{isbn}")
                 if not data:
                     print("Book not found.")
                     play_sound("error")
@@ -244,6 +136,7 @@ def main():
         else:
             print("Invalid input.")
             play_sound("error")
+
 
 if __name__ == "__main__":
     main()
