@@ -28,6 +28,18 @@ class Book:
             url=book_data.get("url", "")
         )
 
+    @classmethod
+    def from_google_books(cls, isbn: str, data: dict):
+        volume_info = data.get("volumeInfo", {})
+        return cls(
+            isbn13=isbn,
+            title=volume_info.get("title", ""),
+            subtitle=volume_info.get("subtitle", ""),
+            author=", ".join(volume_info.get("authors", [])),
+            publish_date=volume_info.get("publishedDate", ""),
+            url=volume_info.get("infoLink", "")
+        )
+
     def to_csv_row(self):
         return [self.isbn13, self.title, self.subtitle, self.author, self.publish_date, self.url]
 
@@ -83,8 +95,15 @@ def save_books(books: dict):
         for book in sorted_books:
             writer.writerow(book.to_csv_row())
 
-def fetch_book_data(isbn: str) -> dict:
+def fetch_book_data_from_open_library(isbn: str) -> dict:
     url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return {}
+
+def fetch_book_data_from_google_books(isbn: str) -> dict:
+    url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()
@@ -117,16 +136,26 @@ def main():
                 print(book)
                 continue
 
-            data = fetch_book_data(isbn)
+            data = fetch_book_data_from_open_library(isbn)
             if not data or f"ISBN:{isbn}" not in data:
-                print(f"Book not found. {isbn}\n")
-                continue
+                print(f"Book not found in Open Library. Trying Google Books...\n")
+                data = fetch_book_data_from_google_books(isbn)
 
-            book = Book.from_api(isbn, data)
-            books[isbn] = book
-            save_books(books)
-            print("\nAdded:")
-            print(book)
+                if not data or "items" not in data:
+                    print(f"Book not found in Google Books either. ISBN: {isbn}\n")
+                    continue
+
+                book = Book.from_google_books(isbn, data["items"][0])
+                books[isbn] = book
+                save_books(books)
+                print("\nAdded from Google Books:")
+                print(book)
+            else:
+                book = Book.from_api(isbn, data)
+                books[isbn] = book
+                save_books(books)
+                print("\nAdded from Open Library:")
+                print(book)
         
         # If the input is not numeric (Title search)
         else:
