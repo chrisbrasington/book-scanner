@@ -112,8 +112,7 @@ def main():
 
         data = fetch_book_data(isbn)
         if not data or f"ISBN:{isbn}" not in data:
-            print("Book not found.\n")
-            os.system('clear')
+            print(f"Book not found. {isbn}\n")
             continue
 
         book = Book.from_api(isbn, data)
