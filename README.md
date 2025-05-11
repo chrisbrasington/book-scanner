@@ -1,4 +1,4 @@
-# Book Lookup Script
+# Book Scanner Lookup Script & CSV database
 
 This Python script allows you to search for book metadata using either ISBN (ISBN-13 or ISBN-10) or a title-author pair. It retrieves information from Open Library and Google Books, then stores results in a CSV file.
 
@@ -57,8 +57,7 @@ Quit with `q`.
 
 ## Output
 
-Results are saved in `books.csv`, sorted by author and publish date.
-
+Results are saved in `books.csv`, sorted by author (last name) and publish date (irregular unformatted data supported as datetime).
 
 ### Console Display
 
