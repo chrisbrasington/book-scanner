@@ -6,6 +6,7 @@ from googlebooks import fetch_google_books_data
 
 BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
+GOOGLE_FIRST = True  # Set to False to try Open Library first
 
 def load_books() -> dict:
     books = {}
@@ -92,17 +93,31 @@ def main():
                 play_sound("success")
                 continue
 
-            data = fetch_open_library_data(isbn)
-            if data and f"ISBN:{isbn}" in data:
-                book = Book.from_open_library(isbn, data)
-            else:
-                print("Not found on Open Library. Trying Google Books...")
+            book = None
+
+            if GOOGLE_FIRST:
                 data = fetch_google_books_data(f"isbn:{isbn}")
-                if not data:
-                    print("Book not found.")
-                    play_sound("error")
-                    continue
-                book = Book.from_google_books(isbn, data)
+                if data:
+                    book = Book.from_google_books(isbn, data)
+                else:
+                    print("Not found on Google Books. Trying Open Library...")
+                    data = fetch_open_library_data(isbn)
+                    if data and f"ISBN:{isbn}" in data:
+                        book = Book.from_open_library(isbn, data)
+            else:
+                data = fetch_open_library_data(isbn)
+                if data and f"ISBN:{isbn}" in data:
+                    book = Book.from_open_library(isbn, data)
+                else:
+                    print("Not found on Open Library. Trying Google Books...")
+                    data = fetch_google_books_data(f"isbn:{isbn}")
+                    if data:
+                        book = Book.from_google_books(isbn, data)
+
+            if not book:
+                print("Book not found.")
+                play_sound("error")
+                continue
 
             books[book.isbn13 or isbn] = book
             save_books(books)
