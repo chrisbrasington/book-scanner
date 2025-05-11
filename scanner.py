@@ -63,11 +63,31 @@ def is_valid_isbn10(s):
     """Check if the ISBN is a valid 10-digit number."""
     return len(s) == 10 and s[:-1].isdigit() and (s[-1].isdigit() or s[-1] in 'Xx')
 
-
 def search_books_by_title_and_author(books: dict, title: str, author: str) -> list:
     """Search books in the database by title and author."""
-    return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
+    # Search Google Books first
+    google_query = f"title:{title}+author:{author}"
+    book_data = fetch_google_books_data(google_query)
 
+    if book_data:
+        print(f"Found 1 result on Google Books.")
+        
+        # Ensure that book_data is a dictionary and has 'volumeInfo'
+        if isinstance(book_data, dict) and 'volumeInfo' in book_data:
+            # Create a Book object from Google Books data
+            book = Book.from_google_books(book_data.get("volumeInfo", {}), book_data)
+            
+            # Store the book in the local database if it's not already present
+            if book.isbn13 not in books:
+                books[book.isbn13] = book
+            return [book]  # Return the first match
+        else:
+            print("Error: No 'volumeInfo' found in the Google Books data.")
+            play_sound("error")
+            return []
+    
+    # If no Google match found, fallback to local database
+    return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
 
 def play_sound(sound_type: str):
     """Play a sound based on the action."""
