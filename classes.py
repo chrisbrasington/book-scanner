@@ -36,6 +36,41 @@ class Book:
             tags=tags  # Set the tags to the formatted string
         )
 
+    @classmethod
+    def from_google_books(cls, isbn: str, data: dict):
+        volume_info = data.get("volumeInfo", {})
+        identifiers = volume_info.get("industryIdentifiers", [])
+        categories = volume_info.get("categories", [])
+
+        # Helper to extract ISBNs
+        isbn13 = ""
+        isbn10 = ""
+        for ident in identifiers:
+            if ident["type"] == "ISBN_13":
+                isbn13 = ident["identifier"]
+            elif ident["type"] == "ISBN_10":
+                isbn10 = ident["identifier"]
+
+        # Join authors into one string
+        authors = volume_info.get("authors", [])
+        author_str = ", ".join(authors) if authors else ""
+
+        # Tags from categories
+        tags = ", ".join(categories) if categories else ""
+        tags = f'"{tags}"'
+
+        return cls(
+            isbn13=isbn13,
+            isbn10=isbn10,
+            title=volume_info.get("title", ""),
+            subtitle=volume_info.get("subtitle", ""),
+            author=author_str,
+            publish_date=volume_info.get("publishedDate", ""),
+            url=volume_info.get("canonicalVolumeLink", volume_info.get("infoLink", "")),
+            scanned_input=isbn,
+            tags=tags
+        )
+
     def to_csv_row(self):
         return [self.isbn13, self.isbn10, self.title, self.subtitle, self.author, self.publish_date, self.url, self.scanned_input, self.tags]
 

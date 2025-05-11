@@ -73,6 +73,7 @@ def main():
     os.system('clear')
 
     while True:
+        print()
         user_input = input("Enter ISBN-13 / ISBN-10 or Title (or 'q' to quit): ").strip()
         os.system('clear')
         print(user_input)

@@ -3,7 +3,10 @@ import sys
 import json
 
 def fetch_open_library_data(isbn: str) -> dict:
+    print('Searching open library')
     url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
+    print(url)
+    print()
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()
