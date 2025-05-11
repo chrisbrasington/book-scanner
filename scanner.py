@@ -67,6 +67,22 @@ class Book:
         ]
         return "\n".join(filter(None, lines))
 
+def isbn13_to_isbn10(isbn13: str) -> str:
+    if not isbn13.startswith("978") or len(isbn13) != 13:
+        return ""
+    core = isbn13[3:-1]
+    total = 0
+    for i, digit in enumerate(core):
+        total += int(digit) * (10 - i)
+    check = 11 - (total % 11)
+    if check == 10:
+        check_char = 'X'
+    elif check == 11:
+        check_char = '0'
+    else:
+        check_char = str(check)
+    return core + check_char
+
 def load_books() -> dict:
     books = {}
     try:
@@ -116,9 +132,9 @@ def search_books_by_title_and_author(books: dict, title: str, author: str) -> li
 def play_sound(sound_type: str):
     if SOUND_ON:
         if sound_type == "success":
-            os.system("mpv sounds/success.ogg > /dev/null 2>&1")  # Suppress output for success sound
+            os.system("mpv sounds/success.ogg > /dev/null 2>&1")
         elif sound_type == "error":
-            os.system("mpv sounds/error.wav > /dev/null 2>&1")  # Suppress output for error sound
+            os.system("mpv sounds/error.wav > /dev/null 2>&1")
 
 def main():
     books = load_books()
@@ -131,8 +147,8 @@ def main():
 
         if user_input.lower() == 'q':
             break
-        
-        # If the input is numeric (ISBN)
+
+        # ISBN numeric input
         if user_input.isdigit():
             isbn = user_input
             if len(isbn) != 13:
@@ -141,38 +157,64 @@ def main():
                 continue
 
             if isbn in books:
-                book = books[isbn]
                 print("Book already in database:")
+                print(books[isbn])
+                play_sound("success")
+                continue
+
+            isbn10 = isbn13_to_isbn10(isbn)
+
+            # Open Library - ISBN-13
+            data = fetch_book_data_from_open_library(isbn)
+            if data and f"ISBN:{isbn}" in data:
+                book = Book.from_api(isbn, data)
+                books[isbn] = book
+                save_books(books)
+                print("\nAdded from Open Library (ISBN-13):")
                 print(book)
                 play_sound("success")
                 continue
 
-            data = fetch_book_data_from_open_library(isbn)
-            if not data or f"ISBN:{isbn}" not in data:
-                print(f"Book not found in Open Library. Trying Google Books...\n")
-                data = fetch_book_data_from_google_books(isbn)
-
-                if not data or "items" not in data:
-                    print(f"Book not found in Google Books either. ISBN: {isbn}\n")
-                    play_sound("error")
+            # Open Library - ISBN-10 fallback
+            if isbn10:
+                data = fetch_book_data_from_open_library(isbn10)
+                if data and f"ISBN:{isbn10}" in data:
+                    book = Book.from_api(isbn, data)
+                    books[isbn] = book
+                    save_books(books)
+                    print("\nAdded from Open Library (ISBN-10 fallback):")
+                    print(book)
+                    play_sound("success")
                     continue
 
+            # Google Books - ISBN-13
+            data = fetch_book_data_from_google_books(isbn)
+            if data and "items" in data:
                 book = Book.from_google_books(isbn, data["items"][0])
                 books[isbn] = book
                 save_books(books)
-                print("\nAdded from Google Books:")
+                print("\nAdded from Google Books (ISBN-13):")
                 print(book)
                 play_sound("success")
-            else:
-                book = Book.from_api(isbn, data)
-                books[isbn] = book
-                save_books(books)
-                print("\nAdded from Open Library:")
-                print(book)
-                play_sound("success")
-        
-        # If the input is not numeric (Title search)
-        else:
+                continue
+
+            # Google Books - ISBN-10 fallback
+            if isbn10:
+                data = fetch_book_data_from_google_books(isbn10)
+                if data and "items" in data:
+                    book = Book.from_google_books(isbn, data["items"][0])
+                    books[isbn] = book
+                    save_books(books)
+                    print("\nAdded from Google Books (ISBN-10 fallback):")
+                    print(book)
+                    play_sound("success")
+                    continue
+
+            print(f"Book not found using ISBN-13 or ISBN-10 in either source. ISBN: {isbn}\n")
+            play_sound("error")
+
+        # Title search if alphabetic characters present
+        elif any(c.isalpha() for c in user_input):
             title = user_input
             author = input("Enter author name: ").strip()
 
@@ -181,7 +223,7 @@ def main():
                 print(f"No books found with title '{title}' and author '{author}'.\n")
                 play_sound("error")
                 continue
-            
+
             print(f"Found books with title '{title}' and author '{author}':")
             for idx, book in enumerate(matching_books, 1):
                 print(f"{idx}. {book.title} by {book.author}")
