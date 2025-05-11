@@ -90,36 +90,69 @@ def fetch_book_data(isbn: str) -> dict:
         return response.json()
     return {}
 
+def search_books_by_title_and_author(books: dict, title: str, author: str) -> list:
+    return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
+
 def main():
     books = load_books()
     os.system('clear')
 
     while True:
-        isbn = input("Enter ISBN-13 (or 'q' to quit): ").strip()
+        user_input = input("Enter ISBN-13 or Title (or 'q' to quit): ").strip()
         os.system('clear')
 
-        if isbn.lower() == 'q':
+        if user_input.lower() == 'q':
             break
-        if len(isbn) != 13 or not isbn.isdigit():
-            print("Invalid ISBN-13. Try again.\n")
-            continue
+        
+        # If the input is numeric (ISBN)
+        if user_input.isdigit():
+            isbn = user_input
+            if len(isbn) != 13:
+                print("Invalid ISBN-13. Try again.\n")
+                continue
 
-        if isbn in books:
-            book = books[isbn]
-            print("Book already in database:")
+            if isbn in books:
+                book = books[isbn]
+                print("Book already in database:")
+                print(book)
+                continue
+
+            data = fetch_book_data(isbn)
+            if not data or f"ISBN:{isbn}" not in data:
+                print(f"Book not found. {isbn}\n")
+                continue
+
+            book = Book.from_api(isbn, data)
+            books[isbn] = book
+            save_books(books)
+            print("\nAdded:")
             print(book)
-            continue
+        
+        # If the input is not numeric (Title search)
+        else:
+            title = user_input
+            author = input("Enter author name: ").strip()
 
-        data = fetch_book_data(isbn)
-        if not data or f"ISBN:{isbn}" not in data:
-            print(f"Book not found. {isbn}\n")
-            continue
+            matching_books = search_books_by_title_and_author(books, title, author)
+            if not matching_books:
+                print(f"No books found with title '{title}' and author '{author}'.\n")
+                continue
+            
+            print(f"Found books with title '{title}' and author '{author}':")
+            for idx, book in enumerate(matching_books, 1):
+                print(f"{idx}. {book.title} by {book.author}")
 
-        book = Book.from_api(isbn, data)
-        books[isbn] = book
-        save_books(books)
-        print("\nAdded:")
-        print(book)
+            selection = input(f"Enter the number to select a book or 'q' to quit: ").strip()
+
+            if selection.lower() == 'q':
+                break
+            elif selection.isdigit() and 1 <= int(selection) <= len(matching_books):
+                selected_book = matching_books[int(selection) - 1]
+                print(f"\nSelected Book:\n{selected_book}")
+                continue
+            else:
+                print("Invalid selection. Try again.\n")
+                continue
 
 if __name__ == "__main__":
     main()
