@@ -11,7 +11,7 @@ class Book:
     publish_date: str = ""
     url: str = ""
     scanned_input: str = ""
-    tags: str = ""  # New field
+    tags: str = ""  # New field for tags
 
     @classmethod
     def from_open_library(cls, isbn: str, data: dict):
@@ -19,7 +19,11 @@ class Book:
         book_data = data.get(key, {})
         identifiers = book_data.get("identifiers", {})
         subjects = book_data.get("subjects", [])
+        
+        # Extract subjects and format them into a tag string
         tag_list = [s["name"] for s in subjects]
+        tags = ", ".join(tag_list) if tag_list else ""
+
         return cls(
             isbn13=identifiers.get("isbn_13", [""])[0],
             isbn10=identifiers.get("isbn_10", [""])[0],
@@ -29,7 +33,7 @@ class Book:
             publish_date=book_data.get("publish_date", ""),
             url=book_data.get("url", ""),
             scanned_input=isbn,
-            tags=", ".join(tag_list)
+            tags=tags  # Set the tags to the formatted string
         )
 
     def to_csv_row(self):
