@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 BOOKS_CSV = "books.csv"
+SOUND_ON = True  # Optional, hardcoded
 
 @dataclass
 class Book:
@@ -112,6 +113,13 @@ def fetch_book_data_from_google_books(isbn: str) -> dict:
 def search_books_by_title_and_author(books: dict, title: str, author: str) -> list:
     return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
 
+def play_sound(sound_type: str):
+    if SOUND_ON:
+        if sound_type == "success":
+            os.system("mpv sounds/success.ogg > /dev/null 2>&1")  # Suppress output for success sound
+        elif sound_type == "error":
+            os.system("mpv sounds/error.wav > /dev/null 2>&1")  # Suppress output for error sound
+
 def main():
     books = load_books()
     os.system('clear')
@@ -119,6 +127,7 @@ def main():
     while True:
         user_input = input("Enter ISBN-13 or Title (or 'q' to quit): ").strip()
         os.system('clear')
+        print(user_input)
 
         if user_input.lower() == 'q':
             break
@@ -128,12 +137,14 @@ def main():
             isbn = user_input
             if len(isbn) != 13:
                 print("Invalid ISBN-13. Try again.\n")
+                play_sound("error")
                 continue
 
             if isbn in books:
                 book = books[isbn]
                 print("Book already in database:")
                 print(book)
+                play_sound("success")
                 continue
 
             data = fetch_book_data_from_open_library(isbn)
@@ -143,6 +154,7 @@ def main():
 
                 if not data or "items" not in data:
                     print(f"Book not found in Google Books either. ISBN: {isbn}\n")
+                    play_sound("error")
                     continue
 
                 book = Book.from_google_books(isbn, data["items"][0])
@@ -150,12 +162,14 @@ def main():
                 save_books(books)
                 print("\nAdded from Google Books:")
                 print(book)
+                play_sound("success")
             else:
                 book = Book.from_api(isbn, data)
                 books[isbn] = book
                 save_books(books)
                 print("\nAdded from Open Library:")
                 print(book)
+                play_sound("success")
         
         # If the input is not numeric (Title search)
         else:
@@ -165,6 +179,7 @@ def main():
             matching_books = search_books_by_title_and_author(books, title, author)
             if not matching_books:
                 print(f"No books found with title '{title}' and author '{author}'.\n")
+                play_sound("error")
                 continue
             
             print(f"Found books with title '{title}' and author '{author}':")
@@ -178,9 +193,11 @@ def main():
             elif selection.isdigit() and 1 <= int(selection) <= len(matching_books):
                 selected_book = matching_books[int(selection) - 1]
                 print(f"\nSelected Book:\n{selected_book}")
+                play_sound("success")
                 continue
             else:
                 print("Invalid selection. Try again.\n")
+                play_sound("error")
                 continue
 
 if __name__ == "__main__":
