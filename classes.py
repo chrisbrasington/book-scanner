@@ -57,7 +57,6 @@ class Book:
 
         # Tags from categories
         tags = ", ".join(categories) if categories else ""
-        tags = f'"{tags}"'
 
         return cls(
             isbn13=isbn13,
@@ -104,6 +103,7 @@ class Book:
             f"Subtitle: {self.subtitle}" if self.subtitle else None,
             f"Author: {self.author}",
             f"Published: {self.publish_date}",
-            f"URL: {self.url}" if self.url else None
+            f"URL: {self.url}" if self.url else None,
+            f"tags: {self.tags}"
         ]
         return "\n".join(filter(None, lines))
