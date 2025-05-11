@@ -1,7 +1,8 @@
-import csv
 import os
+import csv
 import requests
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass
+from datetime import datetime
 
 BOOKS_CSV = "books.csv"
 
@@ -34,6 +35,25 @@ class Book:
     def csv_headers():
         return ["ISBN-13", "Title", "Subtitle", "Author", "Publish Date", "URL"]
 
+    def sortable_date(self):
+        try:
+            return datetime.strptime(self.publish_date, "%b %d, %Y")
+        except ValueError:
+            try:
+                return datetime.strptime(self.publish_date, "%Y")
+            except ValueError:
+                return datetime.min
+
+    def __str__(self):
+        lines = [
+            f"Title: {self.title}",
+            f"Subtitle: {self.subtitle}" if self.subtitle else None,
+            f"Author: {self.author}",
+            f"Published: {self.publish_date}",
+            f"URL: {self.url}\n" if self.url else None
+        ]
+        return "\n".join(filter(None, lines))
+
 def load_books() -> dict:
     books = {}
     try:
@@ -55,7 +75,7 @@ def load_books() -> dict:
 def save_books(books: dict):
     sorted_books = sorted(
         books.values(),
-        key=lambda b: (b.author.lower(), b.publish_date)
+        key=lambda b: (b.author.lower(), b.sortable_date())
     )
     with open(BOOKS_CSV, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -72,29 +92,35 @@ def fetch_book_data(isbn: str) -> dict:
 
 def main():
     books = load_books()
+    os.system('clear')
 
     while True:
-        isbn = input("Enter ISBN-13 (or 'q' to quit): ").strip().replace('-','')
+        isbn = input("Enter ISBN-13 (or 'q' to quit): ").strip()
         os.system('clear')
+
         if isbn.lower() == 'q':
             break
         if len(isbn) != 13 or not isbn.isdigit():
             print("Invalid ISBN-13. Try again.\n")
             continue
+
         if isbn in books:
             book = books[isbn]
-            print(f"Book already in database:\n\n\tTitle: {book.title}\n\tAuthor: {book.author}\n\tPublished: {book.publish_date}\n")
+            print("Book already in database:")
+            print(book)
             continue
 
         data = fetch_book_data(isbn)
         if not data or f"ISBN:{isbn}" not in data:
             print("Book not found.\n")
+            os.system('clear')
             continue
 
         book = Book.from_api(isbn, data)
         books[isbn] = book
         save_books(books)
-        print(f"Added: {book.title} by {book.author}\n")
+        print("\nAdded:")
+        print(book)
 
 if __name__ == "__main__":
     main()
