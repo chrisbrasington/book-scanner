@@ -6,7 +6,6 @@ from googlebooks import fetch_google_books_data
 
 BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
-GOOGLE_FIRST = True  # Set to False to try Open Library first
 
 def load_books() -> dict:
     books = {}
@@ -23,7 +22,8 @@ def load_books() -> dict:
                     publish_date=row.get("Publish Date", ""),
                     url=row.get("URL", ""),
                     scanned_input=row.get("Scanned Input", ""),
-                    tags=row.get("Tags", "")
+                    tags=row.get("Tags", ""),
+                    description=row.get("Description", "")  # Updated for Google Books description
                 )
     except FileNotFoundError:
         pass
@@ -69,6 +69,46 @@ def play_sound(sound_type: str):
             os.system("mpv sounds/error.wav > /dev/null 2>&1")
 
 
+def add_book_by_isbn(books: dict, isbn: str):
+    isbn = isbn.replace("-", "")
+    if isbn in books:
+        print("Book already in database:")
+        print(books[isbn])
+        play_sound("success")
+        return
+
+    book = None
+
+    # Try Google Books first
+    google_data = fetch_google_books_data(f"isbn:{isbn}")
+    if google_data:
+        print("  -> Found on Google Books")
+        book = Book.from_google_books(isbn, google_data)
+
+        # Even if found, get better tags from Open Library
+        openlib_data = fetch_open_library_data(isbn)
+        if openlib_data and f"ISBN:{isbn}" in openlib_data:
+            ol_tags = Book.extract_tags_from_open_library(openlib_data[f"ISBN:{isbn}"])
+            if ol_tags:
+                print(f"  -> Replacing tags with Open Library subjects: {ol_tags}")
+                book.tags = ol_tags
+    else:
+        print("  -> Not found on Google. Trying Open Library...")
+        openlib_data = fetch_open_library_data(isbn)
+        if openlib_data and f"ISBN:{isbn}" in openlib_data:
+            book = Book.from_open_library(isbn, openlib_data)
+        else:
+            print("  -> Book not found in either service.")
+            play_sound("error")
+            return
+
+    books[book.isbn13 or isbn] = book
+    save_books(books)
+    print("\nBook added:")
+    print(book)
+    play_sound("success")
+
+
 def main():
     books = load_books()
     os.system('clear')
@@ -86,45 +126,7 @@ def main():
         user_input = user_input.replace('-', '')
 
         if is_valid_isbn13(user_input) or is_valid_isbn10(user_input):
-            isbn = user_input
-            if isbn in books:
-                print("Book already in database:")
-                print(books[isbn])
-                play_sound("success")
-                continue
-
-            book = None
-
-            if GOOGLE_FIRST:
-                data = fetch_google_books_data(f"isbn:{isbn}")
-                if data:
-                    book = Book.from_google_books(isbn, data)
-                else:
-                    print("Not found on Google Books. Trying Open Library...")
-                    data = fetch_open_library_data(isbn)
-                    if data and f"ISBN:{isbn}" in data:
-                        book = Book.from_open_library(isbn, data)
-            else:
-                data = fetch_open_library_data(isbn)
-                if data and f"ISBN:{isbn}" in data:
-                    book = Book.from_open_library(isbn, data)
-                else:
-                    print("Not found on Open Library. Trying Google Books...")
-                    data = fetch_google_books_data(f"isbn:{isbn}")
-                    if data:
-                        book = Book.from_google_books(isbn, data)
-
-            if not book:
-                print("Book not found.")
-                play_sound("error")
-                continue
-
-            books[book.isbn13 or isbn] = book
-            save_books(books)
-            print("\nBook added:")
-            print(book)
-            play_sound("success")
-
+            add_book_by_isbn(books, user_input)
         elif any(c.isalpha() for c in user_input):
             title = user_input
             author = input("Enter author name: ").strip()
@@ -148,7 +150,6 @@ def main():
             else:
                 print("Invalid selection.")
                 play_sound("error")
-
         else:
             print("Invalid input.")
             play_sound("error")
