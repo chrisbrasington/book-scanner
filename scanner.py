@@ -1,6 +1,6 @@
 import os
 import csv
-from classes import Book
+from classes import Book  # Ensure that Book is imported from classes.py
 from openlibrary import fetch_open_library_data
 from googlebooks import fetch_google_books_data
 
@@ -8,6 +8,7 @@ BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
 
 def load_books() -> dict:
+    """Load books from the CSV file into a dictionary."""
     books = {}
     try:
         with open(BOOKS_CSV, newline='', encoding="utf-8") as f:
@@ -33,6 +34,7 @@ def load_books() -> dict:
 
 
 def save_books(books: dict):
+    """Save the updated books to the CSV file."""
     sorted_books = sorted(
         books.values(),
         key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())
@@ -41,27 +43,32 @@ def save_books(books: dict):
         writer = csv.writer(f)
         writer.writerow(Book.csv_headers())
         for book in sorted_books:
-            writer.writerow(book.to_csv_row())
+            writer.writerow(book.to_csv_row())  
 
 
 def get_last_name(author: str) -> str:
+    """Extract the last name from the author's full name."""
     parts = author.split()
     return parts[-1] if parts else ""
 
 
 def is_valid_isbn13(s):
+    """Check if the ISBN is a valid 13-digit number."""
     return len(s) == 13 and s.isdigit()
 
 
 def is_valid_isbn10(s):
+    """Check if the ISBN is a valid 10-digit number."""
     return len(s) == 10 and s[:-1].isdigit() and (s[-1].isdigit() or s[-1] in 'Xx')
 
 
 def search_books_by_title_and_author(books: dict, title: str, author: str) -> list:
+    """Search books in the database by title and author."""
     return [book for book in books.values() if title.lower() in book.title.lower() and author.lower() in book.author.lower()]
 
 
 def play_sound(sound_type: str):
+    """Play a sound based on the action."""
     if SOUND_ON:
         if sound_type == "success":
             os.system("mpv sounds/success.ogg > /dev/null 2>&1")
@@ -70,6 +77,7 @@ def play_sound(sound_type: str):
 
 
 def add_book_by_isbn(books: dict, isbn: str):
+    """Add a book to the collection using its ISBN."""
     isbn = isbn.replace("-", "")
     if isbn in books:
         print("Book already in database:")
@@ -88,10 +96,12 @@ def add_book_by_isbn(books: dict, isbn: str):
         # Even if found, get better tags from Open Library
         openlib_data = fetch_open_library_data(isbn)
         if openlib_data and f"ISBN:{isbn}" in openlib_data:
-            ol_tags = Book.extract_tags_from_open_library(openlib_data[f"ISBN:{isbn}"])
-            if ol_tags:
-                print(f"  -> Replacing tags with Open Library subjects: {ol_tags}")
-                book.tags = ol_tags
+            print("  -> Found in Open Library, updating tags...")
+            ol_book = Book.from_open_library(isbn, openlib_data)  # Create Book from Open Library data
+            # Replace the tags from Open Library (if available)
+            if ol_book.tags:
+                print(f"  -> Replacing tags with Open Library subjects: {ol_book.tags}")
+                book.tags = ol_book.tags
     else:
         print("  -> Not found on Google. Trying Open Library...")
         openlib_data = fetch_open_library_data(isbn)
@@ -110,6 +120,7 @@ def add_book_by_isbn(books: dict, isbn: str):
 
 
 def main():
+    """Main loop for handling user input and managing books."""
     books = load_books()
     os.system('clear')
 

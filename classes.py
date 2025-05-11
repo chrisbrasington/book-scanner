@@ -12,7 +12,8 @@ class Book:
     url: str = ""
     scanned_input: str = ""
     tags: str = ""
-    description: str = ""  # ✅ New field for Google Books description
+    description: str = ""  # Google Books description
+    thumbnail: str = ""  # ✅ New field for book thumbnail URL
 
     @classmethod
     def from_open_library(cls, isbn: str, data: dict):
@@ -25,6 +26,8 @@ class Book:
         tag_list = [s["name"] for s in subjects]
         tags = ", ".join(tag_list) if tag_list else ""
 
+        thumbnail_url = book_data.get("cover", {}).get("large", "")  # Extract thumbnail URL from Open Library
+
         return cls(
             isbn13=identifiers.get("isbn_13", [""])[0],
             isbn10=identifiers.get("isbn_10", [""])[0],
@@ -35,7 +38,8 @@ class Book:
             url=book_data.get("url", ""),
             scanned_input=isbn,
             tags=tags,
-            description=""  # Open Library does not provide description
+            description="",  # Open Library does not provide description
+            thumbnail=thumbnail_url  # Store thumbnail URL
         )
 
     @classmethod
@@ -60,6 +64,9 @@ class Book:
         # Tags from categories
         tags = ", ".join(categories) if categories else ""
 
+        # Get thumbnail image URL from Google Books
+        thumbnail_url = volume_info.get("imageLinks", {}).get("thumbnail", "")
+
         return cls(
             isbn13=isbn13,
             isbn10=isbn10,
@@ -70,20 +77,23 @@ class Book:
             url=volume_info.get("canonicalVolumeLink", volume_info.get("infoLink", "")),
             scanned_input=isbn,
             tags=tags,
-            description=volume_info.get("description", "")  # ✅ Google Books description
+            description=volume_info.get("description", ""),  # ✅ Google Books description
+            thumbnail=thumbnail_url  # Store thumbnail URL
         )
 
     def to_csv_row(self):
         return [
             self.isbn13, self.isbn10, self.title, self.subtitle, self.author,
-            self.publish_date, self.url, self.scanned_input, self.tags, self.description
+            self.publish_date, self.url, self.scanned_input, self.tags,
+            self.thumbnail,  # Add thumbnail column before description
+            self.description
         ]
 
     @staticmethod
     def csv_headers():
         return [
             "ISBN-13", "ISBN-10", "Title", "Subtitle", "Author",
-            "Publish Date", "URL", "Scanned Input", "Tags", "Description"
+            "Publish Date", "URL", "Scanned Input", "Tags", "Thumbnail", "Description"
         ]
 
     def sortable_date(self):
@@ -114,6 +124,7 @@ class Book:
             f"Published: {self.publish_date}",
             f"URL: {self.url}" if self.url else None,
             f"Tags: {self.tags}",
+            f"Thumbnail: {self.thumbnail}" if self.thumbnail else None,
             f"Description: {self.description}" if self.description else None
         ]
         return "\n".join(filter(None, lines))
