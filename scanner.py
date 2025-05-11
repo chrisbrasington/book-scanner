@@ -25,7 +25,8 @@ def load_books() -> dict:
                     url=row.get("URL", ""),
                     scanned_input=row.get("Scanned Input", ""),
                     tags=row.get("Tags", ""),
-                    description=row.get("Description", "")  # Updated for Google Books description
+                    description=row.get("Description", ""),
+                    thumbnail=row.get("Thumbnail", "")
                 )
     except FileNotFoundError:
         pass
