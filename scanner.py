@@ -1,5 +1,6 @@
 import os
 import csv
+import sys
 from classes import Book  # Ensure that Book is imported from classes.py
 from openlibrary import fetch_open_library_data
 from googlebooks import fetch_google_books_data
@@ -93,6 +94,10 @@ def add_book_by_isbn(books: dict, isbn: str):
         print("  -> Found on Google Books")
         book = Book.from_google_books(isbn, google_data)
 
+        # Store the thumbnail from Google Books (if available)
+        if 'thumbnail' in google_data:
+            book.thumbnail = google_data['thumbnail']
+
         # Even if found, get better tags from Open Library
         openlib_data = fetch_open_library_data(isbn)
         if openlib_data and f"ISBN:{isbn}" in openlib_data:
@@ -119,51 +124,73 @@ def add_book_by_isbn(books: dict, isbn: str):
     play_sound("success")
 
 
+def process_isbns_from_file(file_path: str, books: dict):
+    """Process each ISBN from a file."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                isbn = line.strip()
+                if is_valid_isbn13(isbn) or is_valid_isbn10(isbn):
+                    add_book_by_isbn(books, isbn)
+                else:
+                    print(f"Invalid ISBN: {isbn}")
+                    play_sound("error")
+    except FileNotFoundError:
+        print(f"File {file_path} not found.")
+        play_sound("error")
+
+
 def main():
     """Main loop for handling user input and managing books."""
     books = load_books()
     os.system('clear')
 
-    while True:
-        print()
-        user_input = input("Enter ISBN-13 / ISBN-10 or Title (or 'q' to quit): ").strip()
-        os.system('clear')
-        print(user_input)
-        print()
+    # Check if file argument is provided
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+        process_isbns_from_file(input_file, books)
+    else:
+        # Run interactive mode
+        while True:
+            print()
+            user_input = input("Enter ISBN-13 / ISBN-10 or Title (or 'q' to quit): ").strip()
+            os.system('clear')
+            print(user_input)
+            print()
 
-        if user_input.lower() == 'q':
-            break
+            if user_input.lower() == 'q':
+                break
 
-        user_input = user_input.replace('-', '')
+            user_input = user_input.replace('-', '')
 
-        if is_valid_isbn13(user_input) or is_valid_isbn10(user_input):
-            add_book_by_isbn(books, user_input)
-        elif any(c.isalpha() for c in user_input):
-            title = user_input
-            author = input("Enter author name: ").strip()
-            matches = search_books_by_title_and_author(books, title, author)
-            if not matches:
-                print("No matches found.")
-                play_sound("error")
-                continue
+            if is_valid_isbn13(user_input) or is_valid_isbn10(user_input):
+                add_book_by_isbn(books, user_input)
+            elif any(c.isalpha() for c in user_input):
+                title = user_input
+                author = input("Enter author name: ").strip()
+                matches = search_books_by_title_and_author(books, title, author)
+                if not matches:
+                    print("No matches found.")
+                    play_sound("error")
+                    continue
 
-            print("Found matches:")
-            for i, b in enumerate(matches, 1):
-                print(f"{i}. {b.title} by {b.author}")
-            choice = input("Choose number or 'q' to cancel: ").strip()
-            if choice.lower() == 'q':
-                continue
-            if choice.isdigit() and 1 <= int(choice) <= len(matches):
-                selected = matches[int(choice) - 1]
-                print("\nSelected Book:")
-                print(selected)
-                play_sound("success")
+                print("Found matches:")
+                for i, b in enumerate(matches, 1):
+                    print(f"{i}. {b.title} by {b.author}")
+                choice = input("Choose number or 'q' to cancel: ").strip()
+                if choice.lower() == 'q':
+                    continue
+                if choice.isdigit() and 1 <= int(choice) <= len(matches):
+                    selected = matches[int(choice) - 1]
+                    print("\nSelected Book:")
+                    print(selected)
+                    play_sound("success")
+                else:
+                    print("Invalid selection.")
+                    play_sound("error")
             else:
-                print("Invalid selection.")
+                print("Invalid input.")
                 play_sound("error")
-        else:
-            print("Invalid input.")
-            play_sound("error")
 
 
 if __name__ == "__main__":
