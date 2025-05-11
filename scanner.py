@@ -152,6 +152,8 @@ def main():
         if user_input.lower() == 'q':
             break
 
+        user_input = user_input.replace('-','')
+
         if is_valid_isbn13(user_input) or is_valid_isbn10(user_input):
             isbn = user_input
             if isbn in books:
