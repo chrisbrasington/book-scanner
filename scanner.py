@@ -60,12 +60,31 @@ class Book:
 
     def sortable_date(self):
         try:
+            # Try to parse the date in the format: "Jul 13, 2021" or "June 15, 2000"
             return datetime.strptime(self.publish_date, "%b %d, %Y")
         except ValueError:
             try:
-                return datetime.strptime(self.publish_date, "%Y")
+                # Try to parse the date in the format: "2025-02-25" (ISO format)
+                return datetime.strptime(self.publish_date, "%Y-%m-%d")
             except ValueError:
-                return datetime.min
+                try:
+                    # Try to parse the date in the format: "2024" (Year only)
+                    year = int(self.publish_date)
+                    # Return January 1st of that year
+                    return datetime(year, 1, 1)
+                except ValueError:
+                    # If the date is invalid or empty, attempt to guess a plausible date
+                    # Default to January 1st, either in the 1900s or 2000s based on the first digits of the year
+                    # Example: If 'publish_date' is empty or not parsable, we assume 1900 or 2000
+                    try:
+                        year = int(self.publish_date[:4])  # Get the first 4 digits of the year
+                        if year < 1900:
+                            year = 1900  # Adjust to the 1900s if it looks invalid (e.g., "0000")
+                        elif year < 2000:
+                            year = 2000  # Default to 2000 if it's an older format
+                        return datetime(year, 1, 1)  # Default to January 1st of the chosen year
+                    except ValueError:
+                        return datetime(1900, 1, 1)  # Fallback to January 1st, 1900 if all fails
 
     def __str__(self):
         lines = [
@@ -106,6 +125,11 @@ def save_books(books: dict):
         books.values(),
         key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())  # Sort by last name, then by publish date
     )
+
+    # for b in sorted_books:
+    #     print(b.author, b.sortable_date())
+    # x = input()
+
     with open(BOOKS_CSV, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(Book.csv_headers())
