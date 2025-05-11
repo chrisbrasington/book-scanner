@@ -2,6 +2,23 @@
 
 This Python script allows you to search for book metadata using either ISBN (ISBN-13 or ISBN-10) or a title-author pair. It retrieves information from Open Library and Google Books, then stores results in a CSV file.
 
+## Barcode Scanner Keyboard Wedge
+
+To streamline ISBN entry, you can use a barcode scanner keyboard wedge app on your phone. This allows barcode scans to be input directly into the script as if typed.
+
+### Recommended App
+
+**[QR Scanner Keyboard (by AppGround)](https://play.google.com/store/apps/details?id=io.appground.blek&hl=en-US)**  
+A reliable Android app that emulates scanned barcodes as keyboard input.
+
+- Supports ISBN-13 and ISBN-10 barcodes
+- Works over Bluetooth, USB, or directly on-device
+- Ideal for use with terminals, forms, and scripts expecting text input
+
+> 📲 Install from the [Google Play Store](https://play.google.com/store/apps/details?id=io.appground.blek&hl=en-US)
+
+**Note:** Ensure your terminal window or input box is focused when scanning.
+
 ## Features
 
 - Accepts ISBN-13 or ISBN-10
@@ -62,24 +79,6 @@ URL: [http://books.google.com/books?id=BRkgEQAAQBAJ\&dq=isbn:9781250400222\&hl=\
 ISBN-13,ISBN-10,Title,Subtitle,Author,Publish Date,URL,Scanned Input
 9780593312070,,Frozen River,A Novel,Ariel Lawhon,2024,https://openlibrary.org/books/OL53367494M/Frozen_River,9780593312070
 ```
-
-## QR Scanner Keyboard Wedge
-
-To streamline ISBN entry, you can use a barcode scanner keyboard wedge app on your phone. This allows barcode scans to be input directly into the script as if typed.
-
-### Recommended App
-
-**[QR Scanner Keyboard (by AppGround)](https://play.google.com/store/apps/details?id=io.appground.blek&hl=en-US)**  
-A reliable Android app that emulates scanned barcodes as keyboard input.
-
-- Supports ISBN-13 and ISBN-10 barcodes
-- Works over Bluetooth, USB, or directly on-device
-- Ideal for use with terminals, forms, and scripts expecting text input
-
-> 📲 Install from the [Google Play Store](https://play.google.com/store/apps/details?id=io.appground.blek&hl=en-US)
-
-**Note:** Ensure your terminal window or input box is focused when scanning.
-
 
 ## License
 
