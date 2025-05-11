@@ -104,7 +104,7 @@ def load_books() -> dict:
 def save_books(books: dict):
     sorted_books = sorted(
         books.values(),
-        key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())  # Sort by last name, then by date
+        key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())  # Sort by last name, then by publish date
     )
     with open(BOOKS_CSV, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
