@@ -69,6 +69,13 @@ def update_book_info(book: Book):
             print("  -> Description added from Google Books.")
             book.description = description
 
+    # Add thumbnail from Google Books if missing
+    if not book.thumbnail and google_data:
+        thumbnail_url = google_data.get("volumeInfo", {}).get("imageLinks", {}).get("thumbnail", "")
+        if thumbnail_url:
+            print(f"  -> Thumbnail added from Google Books: {thumbnail_url}")
+            book.thumbnail = thumbnail_url
+
     return book
 
 def main():
@@ -90,7 +97,8 @@ def main():
                 url=row["URL"],
                 scanned_input=row["Scanned Input"],
                 tags=row["Tags"],
-                description=row.get("Description", "")  # Support old CSVs
+                description=row.get("Description", ""),  # Support old CSVs
+                thumbnail=row.get("Thumbnail", "")  # Read thumbnail from CSV if available
             )
             books.append(book)
 
