@@ -95,18 +95,30 @@ def load_books() -> dict:
                 )
     except FileNotFoundError:
         pass
+
+    # After loading books, resave them to ensure they're sorted
+    save_books(books)
+    
     return books
 
 def save_books(books: dict):
     sorted_books = sorted(
         books.values(),
-        key=lambda b: (b.author.lower(), b.sortable_date())
+        key=lambda b: (get_last_name(b.author).lower(), b.sortable_date())  # Sort by last name, then by date
     )
     with open(BOOKS_CSV, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(Book.csv_headers())
         for book in sorted_books:
             writer.writerow(book.to_csv_row())
+
+def get_last_name(author: str) -> str:
+    """
+    Helper function to extract the last name from the author's full name.
+    Assumes the last word in the author's name is the last name.
+    """
+    parts = author.split()
+    return parts[-1] if parts else ""
 
 def fetch_book_data_from_open_library(isbn: str) -> dict:
     url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
@@ -148,6 +160,7 @@ def main():
         user_input = input("Enter ISBN-13 / ISBN-10 or Title (or 'q' to quit): ").strip()
         os.system('clear')
         print(user_input)
+        print()
 
         if user_input.lower() == 'q':
             break
