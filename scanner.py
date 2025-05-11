@@ -7,7 +7,6 @@ from googlebooks import fetch_google_books_data
 BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
 
-
 def load_books() -> dict:
     books = {}
     try:
@@ -22,7 +21,8 @@ def load_books() -> dict:
                     author=row.get("Author", ""),
                     publish_date=row.get("Publish Date", ""),
                     url=row.get("URL", ""),
-                    scanned_input=row.get("Scanned Input", "")
+                    scanned_input=row.get("Scanned Input", ""),
+                    tags=row.get("Tags", "")
                 )
     except FileNotFoundError:
         pass
