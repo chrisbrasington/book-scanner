@@ -110,8 +110,9 @@ def main():
     # Write updated books to CSV
     with open(CSV_FILE, "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(Book.csv_headers())
+        writer.writerow(Book.csv_headers())  # Assuming Book class has a method to return headers
         for book in updated_books:
+            # Ensure `thumbnail` is written back to the CSV
             writer.writerow(book.to_csv_row())
 
 if __name__ == "__main__":
