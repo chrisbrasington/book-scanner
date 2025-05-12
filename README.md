@@ -23,7 +23,7 @@ A reliable Android app that emulates scanned barcodes as keyboard input.
 
 - Accepts ISBN-13 or ISBN-10
 - Falls back to title and author lookup (manual)
-- Queries Open Library first, then Google Books as fallback
+- Queries google books first (better date format and description and thumbnail), fallback to open library. If possible, takes tags from open library
 - Records results in `books.csv` with:
   - ISBN-13
   - ISBN-10
