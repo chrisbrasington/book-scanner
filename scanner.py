@@ -75,12 +75,27 @@ def search_books_by_title_and_author(books: dict, title: str, author: str) -> li
         # Ensure that book_data is a dictionary and has 'volumeInfo'
         if isinstance(book_data, dict) and 'volumeInfo' in book_data:
             # Create a Book object from Google Books data
-            book = Book.from_google_books(book_data.get("volumeInfo", {}), book_data)
+            google_book = Book.from_google_books(book_data.get("volumeInfo", {}), book_data)
+            
+            # Get the ISBN-13 from Google Books (preferred)
+            isbn13 = google_book.isbn13
+            
+            if isbn13:
+                # Now fetch Open Library data using the ISBN-13 from Google Books
+                openlib_data = fetch_open_library_data(isbn13)
+                if openlib_data:
+                    openlib_book = Book.from_open_library(isbn13, openlib_data)
+                    # Replace the tags from Google Books with tags from Open Library
+                    google_book.tags = openlib_book.tags
+                    print("Replaced Google Books tags with Open Library tags.")
+                else:
+                    print("No Open Library data found for this ISBN-13.")
             
             # Store the book in the local database if it's not already present
-            if book.isbn13 not in books:
-                books[book.isbn13] = book
-            return [book]  # Return the first match
+            if google_book.isbn13 not in books:
+                books[google_book.isbn13] = google_book
+                
+            return [google_book]  # Return the first match
         else:
             print("Error: No 'volumeInfo' found in the Google Books data.")
             play_sound("error")
