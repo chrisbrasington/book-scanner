@@ -4,6 +4,7 @@ import sys
 from classes import Book  # Ensure that Book is imported from classes.py
 from openlibrary import fetch_open_library_data
 from googlebooks import fetch_google_books_data
+from genre import derive_genre, prompt_for_genre
 
 BOOKS_CSV = "books.csv"
 SOUND_ON = True  # Optional, hardcoded
@@ -26,7 +27,8 @@ def load_books() -> dict:
                     scanned_input=row.get("Scanned Input", ""),
                     tags=row.get("Tags", ""),
                     description=row.get("Description", ""),
-                    thumbnail=row.get("Thumbnail", "")
+                    thumbnail=row.get("Thumbnail", ""),
+                    genre=row.get("Genre", "")
                 )
     except FileNotFoundError:
         pass
@@ -143,6 +145,7 @@ def add_book_by_isbn(books: dict, isbn: str):
             if ol_book.tags:
                 print(f"  -> Replacing tags with Open Library subjects: {ol_book.tags}")
                 book.tags = ol_book.tags
+                book.genre = derive_genre(tags=book.tags, title=book.title, subtitle=book.subtitle)
     else:
         print("  -> Not found on Google. Trying Open Library...")
         openlib_data = fetch_open_library_data(isbn)
@@ -152,6 +155,11 @@ def add_book_by_isbn(books: dict, isbn: str):
             print("  -> Book not found in either service.")
             play_sound("error")
             return
+
+    if not book.genre:
+        result = prompt_for_genre(book)
+        if result and result != "__QUIT__":
+            book.genre = result
 
     books[book.isbn13 or isbn] = book
     save_books(books)

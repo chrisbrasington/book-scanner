@@ -3,6 +3,7 @@ import os
 from openlibrary import fetch_open_library_data
 from googlebooks import fetch_google_books_data
 from classes import Book  # Import the Book class
+from genre import derive_genre
 from datetime import datetime
 
 CSV_FILE = "books.csv"
@@ -76,6 +77,13 @@ def update_book_info(book: Book):
             print(f"  -> Thumbnail added from Google Books: {thumbnail_url}")
             book.thumbnail = thumbnail_url
 
+    # Re-derive genre if blank (uses latest tags)
+    if not book.genre:
+        new_genre = derive_genre(tags=book.tags, title=book.title, subtitle=book.subtitle)
+        if new_genre:
+            print(f"  -> Genre derived: {new_genre}")
+            book.genre = new_genre
+
     return book
 
 def main():
@@ -98,7 +106,8 @@ def main():
                 scanned_input=row["Scanned Input"],
                 tags=row["Tags"],
                 description=row.get("Description", ""),  # Support old CSVs
-                thumbnail=row.get("Thumbnail", "")  # Read thumbnail from CSV if available
+                thumbnail=row.get("Thumbnail", ""),  # Read thumbnail from CSV if available
+                genre=row.get("Genre", "")
             )
             books.append(book)
 
