@@ -1,0 +1,100 @@
+{
+  "mythology": [
+    "myth",
+    "folklore",
+    "saga",
+    "legend",
+    "mabinogion",
+    "norse",
+    "celtic mythology",
+    "epic",
+    "fairy tales"
+  ],
+  "sci-fi": [
+    "science fiction",
+    "sci-fi",
+    "scifi",
+    "space opera",
+    "dystopia",
+    "cyberpunk",
+    "robot"
+  ],
+  "fantasy": [
+    "fantasy",
+    "magic",
+    "dragon",
+    "wizard",
+    "sword and sorcery"
+  ],
+  "horror": [
+    "horror",
+    "ghost",
+    "vampire",
+    "occult",
+    "supernatural",
+    "haunted"
+  ],
+  "mystery": [
+    "mystery",
+    "detective",
+    "whodunit",
+    "crime fiction",
+    "jack the ripper",
+    "serial murders"
+  ],
+  "thriller": [
+    "thriller",
+    "suspense",
+    "espionage",
+    "spy"
+  ],
+  "cookbook": [
+    "cookbook",
+    "cooking",
+    "recipe",
+    "recipes",
+    "cuisine",
+    "baking"
+  ],
+  "comicbook": [
+    "comic",
+    "comics",
+    "graphic novel",
+    "manga",
+    "chickpea"
+  ],
+  "classic": [
+    "classic",
+    "classics",
+    "penguin classics",
+    "literary collections"
+  ],
+  "nonfiction": [
+    "history",
+    "biography",
+    "autobiography",
+    "science",
+    "philosophy",
+    "essay",
+    "essays",
+    "memoir",
+    "reference",
+    "religion",
+    "politics",
+    "economics",
+    "psychology",
+    "self-help",
+    "travel",
+    "nature",
+    "judicial error",
+    "crime",
+    "dissertations"
+  ],
+  "science": [
+    "rocks"
+  ],
+  "romantasy": [],
+  "fitness": [
+    "rock climbing"
+  ]
+}
